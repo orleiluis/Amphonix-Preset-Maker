@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Amphonix 2 Preset Maker</title>
+<style>
+:root{--bg:#121214;--card:#1c1c20;--card2:#25252b;--line:#33333b;--tx:#ececf0;--mut:#9a9aa6;--acc:#ff8a1f;--acc2:#ffb066;--ok:#3ecf8e;--bad:#ff5c5c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{padding:16px 16px 8px}
+h1{margin:0;font-size:20px}h1 span{color:var(--acc)}
+.sub{color:var(--mut);font-size:13px;margin-top:2px}
+nav{display:flex;gap:6px;padding:8px 16px;position:sticky;top:0;background:var(--bg);z-index:5;border-bottom:1px solid var(--line)}
+nav button{flex:1}
+main{padding:12px 16px 80px;max-width:760px;margin:0 auto}
+button{background:var(--card2);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;cursor:pointer}
+button.pri{background:var(--acc);color:#1a1006;border-color:var(--acc);font-weight:600}
+button.on{border-color:var(--acc);color:var(--acc2)}
+button:disabled{opacity:.5}
+textarea,input[type=text],select{width:100%;background:var(--card2);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}
+textarea{min-height:80px;resize:vertical}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0}
+.row{display:flex;gap:8px;align-items:center}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{padding:6px 10px;border-radius:999px;font-size:13px}
+.mod{border-left:4px solid var(--line)}
+.mod.active{border-left-color:var(--acc)}
+.modhead{display:flex;align-items:center;gap:8px}
+.tag{font-weight:700;font-size:12px;letter-spacing:.5px;background:var(--card2);border-radius:6px;padding:3px 7px;min-width:44px;text-align:center}
+.mod.active .tag{background:var(--acc);color:#1a1006}
+.modhead select{flex:1}
+.sw{position:relative;width:44px;height:26px;flex:none}
+.sw input{opacity:0;width:0;height:0}
+.sw span{position:absolute;inset:0;background:#3a3a42;border-radius:26px;transition:.15s}
+.sw span:before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.15s}
+.sw input:checked+span{background:var(--acc)}
+.sw input:checked+span:before{transform:translateX(18px)}
+.desc{color:var(--mut);font-size:12.5px;margin:6px 0 2px}
+.params{display:grid;grid-template-columns:1fr;gap:6px;margin-top:8px}
+@media(min-width:560px){.params{grid-template-columns:1fr 1fr}}
+.p{display:grid;grid-template-columns:86px 1fr 40px;align-items:center;gap:6px;font-size:13px}
+.p input[type=range]{width:100%;accent-color:var(--acc)}
+.p b{text-align:right;font-variant-numeric:tabular-nums;color:var(--acc2)}
+.p select{padding:5px}
+pre{white-space:pre-wrap;background:#0d0d0f;border:1px solid var(--line);border-radius:10px;padding:10px;font:12.5px/1.5 ui-monospace,Menlo,Consolas,monospace;margin:8px 0}
+.msg{font-size:13px;color:var(--mut);min-height:18px;margin-top:6px}
+.msg.err{color:var(--bad)}.msg.ok{color:var(--ok)}
+.lib{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.lib small{color:var(--mut)}
+.hidden{display:none}
+.notes{font-size:13.5px;color:#d8d8de;margin-top:6px}
+.count{font-size:12px;color:var(--mut)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td{border-top:1px solid var(--line);padding:6px 4px;vertical-align:top}
+td:first-child{white-space:nowrap;color:var(--acc2)}
+h3{margin:14px 0 4px;font-size:15px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Amphonix 2 <span>Preset Maker</span></h1>
+  <div class="sub">Sonicake Amphonix 2 (QAP-50) · firmware CFW · monte no app Sonicake CFW</div>
+</header>
+<nav>
+  <button id="tCreate" class="on" onclick="tab('create')">Criar</button>
+  <button id="tLib" onclick="tab('lib')">Biblioteca</button>
+  <button id="tFx" onclick="tab('fx')">Efeitos</button>
+</nav>
+<main>
+<section id="vCreate">
+  <div class="card">
+    <label for="desc"><b>Descreva o timbre</b></label>
+    <textarea id="desc" placeholder="Ex.: solo do Gilmour em Comfortably Numb, bem cantado, com delay longo"></textarea>
+    <div class="chips" id="chips"></div>
+    <div class="row">
+      <button class="pri" id="btnLocal" style="flex:1">⚡ Gerar timbre</button>
+    </div>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div style="flex:1">
+        <label for="pname"><b>Nome do preset</b> <span class="count">(inglês, até 10 caracteres)</span></label>
+        <input type="text" id="pname" maxlength="10" placeholder="MY TONE">
+      </div>
+    </div>
+    <div class="notes" id="notes"></div>
+    <div class="count" id="active"></div>
+  </div>
+
+  <div id="chain"></div>
+
+  <div class="card">
+    <b>Receita pra montar no app Sonicake CFW</b>
+    <pre id="out"></pre>
+    <div class="row">
+      <button class="pri" style="flex:1" onclick="copyOut()">📋 Copiar</button>
+      <button style="flex:1" onclick="saveLib()">💾 Salvar na biblioteca</button>
+    </div>
+    <div class="msg" id="msg2"></div>
+  </div>
+  <div class="card" style="font-size:13px;color:var(--mut)">
+    Como usar: no app Sonicake CFW, toque em cada bloco da cadeia, escolha o modelo e ajuste os parâmetros iguais aos daqui. Depois salve (nome em inglês, até 10 letras). A ordem dos blocos pode ser mudada no app em ORDER (arrastar). Etiquetas: <b>SB</b> = modelo vindo do Smart Box, <b>CFW</b> = efeito criado pela firmware personalizada; sem etiqueta = nativo. Modelos marcados "parâmetros a confirmar" usam knobs genéricos — confira os nomes no app.
+    Os valores estão em 0–100 (escala de knob); confira se o app usa a mesma escala em cada parâmetro.
+  </div>
+</section>
+
+<section id="vLib" class="hidden">
+  <div id="libList"></div>
+</section>
+
+<section id="vFx" class="hidden">
+  <div class="card" id="fxList"></div>
+</section>
+</main>
+
+<script>
+// ---------- Banco de efeitos (manual oficial V1.0.2 + firmware CFW) ----------
+const K=(n,d)=>({n,t:'k',d});
+const SW=n=>({n,t:'sw'});
+const SEL=(n,o)=>({n,t:'sel',o});
+const ST=(n,min,max,d)=>({n,t:'st',min,max,d});
+const EQ3=[K('Bass'),K('Middle'),K('Treble')];
+const AMPSTD=[K('Gain'),K('PRES'),K('VOL'),...EQ3];
+const U=o=>Object.assign(o,{u:1});
+const SB=o=>Object.assign(o,{s:'SB'}),CF=o=>Object.assign(o,{s:'CFW'});
+const ALIAS={'Calif Dual V':'Calif DualV','Calif Dual M':'Calif DualM','Bog XT':'Bog XT V','Brit GN 2x12':'BritGN 2x12','Brit GN 4x12':'BritGN 4x12','Halen 4x12':'Dizzy 4x12','TWD-P 1x10':'TWD 1x8','Star 2x12':'Double 2x12','Air':'Room'};
+
+const DB={
+ NR:{label:'NR',full:'Noise Gate',models:{
+  'Gate':{d:'ISP Decimator',p:[K('THRE')]}}},
+ FX1:{label:'FX1',full:'Efeito 1',models:null},
+ FX2:{label:'FX2',full:'Efeito 2',models:null},
+ DRV:{label:'DRV',full:'Drive',models:{
+  'Scream':{d:'Ibanez TS-808 Tube Screamer',p:[K('Gain'),K('Tone'),K('VOL')]},
+  'Butter OD':{d:'Overdrive amarelo de 2 knobs',p:[K('Gain'),K('VOL')]},
+  'JP Dist':{d:'Distorção laranja de 3 knobs',p:[K('Gain'),K('Tone'),K('VOL')]},
+  'Shark':{d:'MI Audio Crunch Box',p:[K('Gain'),K('Tone'),K('VOL')]},
+  'Dark Mouse':{d:'ProCo Rat (LM308)',p:[K('Gain'),K('Filter'),K('VOL')]},
+  'Grey Fuzz':{d:'Sola Sound Tone Bender Mk II',p:[K('Fuzz'),K('VOL')]},
+  'Red Fuzz':{d:'Dallas-Arbiter Fuzz Face',p:[K('Fuzz'),K('VOL')]},
+  'Bass Drive':{d:'Overdrive para baixo',p:[K('Gain'),K('Blend'),K('VOL'),K('Bass'),K('Treble')]}}},
+ AMP:{label:'AMP',full:'Amplificador',models:null},
+ CAB:{label:'IR',full:'Gabinete (IR)',models:{
+  'TWD 1x8':{d:'Fender Champ 1x8"'},'Viblux 1x12':{d:'Fender Vibrolux 1x12"'},'Voks 1x12':{d:'VOX AC15 1x12"'},
+  'TWD 2x12':{d:'Fender Tweed 2x12"'},'Double 2x12':{d:"Fender '65 Twin Reverb 2x12\""},'Jazz 2x12':{d:'Roland Jazz Chorus 2x12"'},
+  'BritGN 2x12':{d:'Marshall 2x12" Greenback'},'BritGN 4x12':{d:'Marshall 4x12" Greenback'},'Bog 4x12':{d:'Bogner 4x12"'},
+  'Dizzy 4x12':{d:'Diezel 4x12"'},'Sol 4x12':{d:'Soldano 4x12"'},'Dual 4x12':{d:'Mesa Rectifier 4x12"'},
+  'Bass 4x10':{d:'Gabinete de baixo 4x10"'},'Mark 2x10':{d:'Gabinete de baixo 2x10"'},'Ampg 4x10':{d:'Ampeg 4x10" (baixo)'},
+  'User IR 1':{d:'IR do usuário'},'User IR 2':{d:'IR do usuário'},'User IR 3':{d:'IR do usuário'},
+  'User IR 4':{d:'IR do usuário'},'User IR 5':{d:'IR do usuário'}}},
+ EQ:{label:'EQ',full:'Equalizador',models:{
+  'GT EQ 1':{d:'5 bandas guitarra',p:[K('125Hz'),K('400Hz'),K('800Hz'),K('1.6kHz'),K('4kHz'),K('VOL')]},
+  'GT EQ 2':{d:'5 bandas guitarra',p:[K('100Hz'),K('500Hz'),K('1kHz'),K('3kHz'),K('6kHz'),K('VOL')]},
+  'Bass EQ':{d:'5 bandas baixo',p:[K('50Hz'),K('120Hz'),K('400Hz'),K('800Hz'),K('4.5kHz'),K('VOL')]},
+  'Studio EQ':CF({d:'EQ de estúdio (0 nos cortes = Off)',p:[K('Low Cut',0),K('Bass'),K('Mid Freq'),K('Mid'),K('Q'),K('Treble'),K('High Cut',0),K('VOL')]}),
+  'Cut 24':CF({d:'Filtros de corte grave/agudo com opção 24 dB/oitava',p:[K('Low Cut',0),K('High Cut',0),SW('24dB'),K('VOL')]}),
+  'Parametric 3':CF({d:'Paramétrico de 3 bandas',p:[K('Low F'),K('Low'),K('Mid F'),K('Mid'),K('High F'),K('High'),K('Q'),K('VOL')]}),
+  'Tilt EQ':CF({d:'Inclina graves × agudos em torno do Pivot',p:[K('Tilt'),K('Pivot'),K('Low Cut',0),K('High Cut',0),K('VOL')]})}},
+ DLY:{label:'DLY',full:'Delay',models:null},
+ RVB:{label:'RVB',full:'Reverb',models:null}
+};
+
+// AMP
+(()=>{
+ const N={
+  'TWD Deluxe':{d:'Fender Tweed Deluxe',p:[K('Gain'),K('Tone'),K('VOL')]},
+  'B-Man N':{d:"Fender '59 Bassman (Normal)",p:AMPSTD},
+  'Dark Twin':{d:"Fender '65 Twin Reverb",p:[K('Gain'),K('VOL'),...EQ3,SW('Bright')]},
+  'Voks 30N':{d:'VOX AC30HW (Normal)',p:[K('Gain'),K('VOL'),K('Tone'),SW('Bright')]},
+  'Jazz 120':{d:'Roland Jazz Chorus',p:[K('VOL'),...EQ3,SW('Bright')]},
+  'Brit 45':{d:'Marshall JTM45 (Normal)',p:AMPSTD},
+  'Brit 50JP':{d:'Marshall JTM50 jumpeado',p:[K('Gain 1'),K('Gain 2'),K('PRES'),K('VOL'),...EQ3]},
+  'Brit 800':{d:'Marshall JCM800',p:AMPSTD},
+  'B-Man B':{d:"Fender '59 Bassman (Bright)",p:AMPSTD},
+  'Voks 30TB':{d:'VOX AC30HW (Top Boost)',p:[K('Gain'),K('Tone'),K('VOL'),K('Bass'),K('Treble'),SEL('Char',['Cool','Hot'])]},
+  'Sol 100 OD':{d:'Soldano SLO100 (Crunch)',p:AMPSTD},
+  'Dizzy VH':{d:'Diezel VH4 (canal 3)',p:AMPSTD},
+  'Eng 120':{d:'ENGL Savage 120',p:AMPSTD},
+  'Halen 51':{d:'Peavey 5150 (Lead)',p:AMPSTD},
+  'Sol 100 LD':{d:'Soldano SLO100 (Overdrive)',p:AMPSTD},
+  'Calif DualV':{d:'Mesa Dual Rectifier (Vintage)',p:AMPSTD},
+  'Calif DualM':{d:'Mesa Dual Rectifier (Modern)',p:AMPSTD},
+  'Eng Power':{d:'ENGL Powerball II (canal 4)',p:AMPSTD},
+  'Flyman B1+':{d:'Friedman Brown Eye (HBE)',p:AMPSTD},
+  'Bog XT V':{d:'Bogner XTC (Red)',p:AMPSTD},
+  'A BassVT':{d:'Ampeg SVT (baixo)',p:[K('Gain'),K('VOL'),K('MidFreq'),...EQ3]},
+  'Voks Bass':{d:'VOX AC-100 (baixo)',p:[K('VOL'),K('Bass'),K('Treble')]}};
+ const g=d=>SB(U({d,p:AMPSTD}));
+ Object.assign(N,{'Calif Star CL':g('≈ Mesa Lone Star (limpo)'),'Superb CL':g('Limpo do Smart Box'),'Bog SV CL':g('≈ Bogner Shiva (limpo)'),'Doctor CL':g('≈ Dr. Z (limpo)'),'Brit 50':g('≈ Marshall 50W'),
+  'Supero 2 OD':SB({d:'Boss SD-2 Dual OverDrive — dois estágios (Gain1/Tone1 e Gain2/Tone2)',p:[K('Gain1'),K('Tone1'),K('Gain2'),K('Tone2'),K('VOL'),SW('Clone Mode')]}),
+  'Calif IIC+':g('≈ Mesa Mark IIC+'),'Superb OD':g('Crunch do Smart Box'),'Doctor OD':g('≈ Dr. Z (drive)'),'Flyman B1':g('≈ Friedman BE'),'Brit 900':g('≈ Marshall JCM900'),'Dizzy VH+':g('≈ Diezel VH4'),'Calif IV LD':g('≈ Mesa Mark IV (lead)'),'Bog XT M':g('≈ Bogner XTC (modern)'),'Tanger R100':g('≈ Orange Rockerverb 100'),'Calif Bass':g('≈ Mesa (baixo)')});
+ DB.AMP.models=N})();
+
+// FX1 / FX2
+const FXM={
+ 'COMP 1':{d:'Ross Compressor',p:[K('Sustain'),K('VOL')]},
+ 'COMP 2':{d:'Keeley C4',p:[K('Sustain'),K('Attack'),K('VOL'),K('Clipping')]},
+ 'Touch Wah':{d:'Envelope filter',p:[K('Sense'),K('Range'),K('Q'),K('Mix'),SEL('Mode',['Guitar','Bass'])]},
+ 'Auto Wah':{d:'Auto-wah por rate',p:[K('Depth'),K('Rate'),K('VOL'),K('Low'),K('High'),K('Q')]},
+ 'Boost':{d:'Xotic EP Booster',p:[K('Gain'),SW('+3dB'),SW('Bright')]},
+ 'A-Chorus':{d:'Arion SCH-1',p:[K('Depth'),K('Rate'),K('Tone')]},
+ 'B-Chorus':{d:'Chorus ensemble p/ baixo',p:[K('Depth'),K('Rate'),K('Tone')]},
+ 'Flanger':{d:'Flanger clássico',p:[K('Depth'),K('Rate'),K('P.Delay'),K('F.Back')]},
+ 'Phaser':{d:'MXR Phase 90',p:[K('Rate')]},
+ 'Vibe':{d:'Voodoo Lab Micro Vibe',p:[K('Depth'),K('Rate')]},
+ 'Vibrato':{d:'Vibrato BBD azul',p:[K('Depth'),K('Rate')]},
+ 'Tremolo':{d:'Demeter TRM-1 (opto)',p:[K('Depth'),K('Rate')]},
+ 'Sine Trem':{d:'Tremolo senoidal',p:[K('Depth'),K('Rate'),K('VOL')]},
+ 'Bias Trem':{d:'Tremolo bias',p:[K('Depth'),K('Rate'),K('VOL'),K('Bias')]}
+};
+const FXPITCH={
+ 'Octave':{d:'Oitavador polifônico',p:[K('Low'),K('High'),K('Dry')]},
+ 'Pitch':{d:'Pitch shifter/harmonizer',p:[ST('High Pitch',-12,12,12),ST('Low Pitch',-12,12,-12),K('Dry'),K('H-VOL'),K('L-VOL')]},
+ 'Detune':{d:'Detune ±50 cents',p:[ST('Detune',-50,50,10),K('Dry/Wet')]}
+};
+(()=>{
+ const m=(d,p)=>SB(U({d,p:p||[K('Depth'),K('Rate'),K('Mix')]}));
+ const S={'C-Wah':m('Wah',[K('Pedal'),K('Q'),K('VOL')]),'Crystal Chorus':m('Chorus'),'Whirlcho':m('Chorus rotativo'),'Fullchor':m('Chorus encorpado'),'Jet':m('Flanger jet',[K('Depth'),K('Rate'),K('F.Back')]),'Flanger ST':m('Flanger estéreo',[K('Depth'),K('Rate'),K('F.Back')]),'Flanser':m('Flanger',[K('Depth'),K('Rate'),K('F.Back')]),'Phaser M':m('Phaser',[K('Depth'),K('Rate')]),'BBD Phaser':m('Phaser BBD',[K('Depth'),K('Rate')]),'Phaser ST':m('Phaser estéreo',[K('Depth'),K('Rate')]),'Lofi Vibrato':m('Vibrato lo-fi',[K('Depth'),K('Rate')]),'Vibrato ST':m('Vibrato estéreo',[K('Depth'),K('Rate')])};
+ DB.FX1.models=Object.assign({},FXM,S);
+ DB.FX2.models=Object.assign({},FXM,FXPITCH,S)})();
+
+// DLY
+(()=>{
+ const DP=[K('Mix'),K('Time'),K('F.Back'),K('Tone',50),K('Duck',0)],D={};
+ [['Pure','Digital limpo'],['Slap','Slapback'],['Warm','Analógico quente'],['Mag','Tape (estado sólido)'],['Tube','Tape valvulado'],['Reverse','Reverso'],['Analog','Rack anos 80']].forEach(([k,d])=>D[k]={d,p:DP});
+ D['Sweep']={d:'Repetições com filtro',p:[...DP,K('S-Depth'),K('S-Rate')]};
+ D['Ping Pong']={d:'Estéreo L/R',p:DP};
+ [['Studio Delay','Delay de estúdio'],['Tape Echo','Eco de fita'],['Dual Delay','Dois delays'],['Shimmer Delay','Delay com shimmer'],['Swell Delay','Delay com volume swell'],['Lo-Fi Delay','Delay lo-fi']].forEach(([k,d])=>D[k]=CF(U({d,p:DP})));
+ ['Echo','Shiny','Dark','Float','Damage','Flash','Shake','Glost','Flutter'].forEach(k=>D[k]=SB(U({d:'Delay do Smart Box',p:DP})));
+ DB.DLY.models=D})();
+
+// RVB
+(()=>{
+ const RP=[K('Mix'),K('Decay'),K('Damp'),K('High Cut',0),K('Low Cut',0)],R={};
+ [['Room','Sala'],['Hall','Salão'],['Church','Igreja'],['Plate 1','Plate grande'],['Plate 2','Plate vintage'],['Spring','Mola'],['Light','Brilhante'],['Ocean','Enorme'],['Dream','Modulado']].forEach(([k,d])=>R[k]={d,p:RP});
+ [['Studio Verb','Reverb de estúdio'],['Ambient','Ambiente'],['Freeze','Congela o som (pad infinito)'],['Duck Verb','Reverb que abaixa enquanto você toca'],['Gated','Reverb com gate (anos 80)']].forEach(([k,d])=>R[k]=CF(U({d,p:RP})));
+ DB.RVB.models=R})();
+
+const ORDER=['NR','FX1','DRV','AMP','CAB','EQ','FX2','DLY','RVB'];
+const CAB_FOR={'TWD Deluxe':'TWD 2x12','B-Man N':'TWD 2x12','B-Man B':'TWD 2x12','Dark Twin':'Double 2x12','Voks 30N':'Voks 1x12','Voks 30TB':'Voks 1x12','Jazz 120':'Jazz 2x12','Brit 45':'BritGN 4x12','Brit 50JP':'BritGN 4x12','Brit 800':'BritGN 4x12','Sol 100 OD':'Sol 4x12','Sol 100 LD':'Sol 4x12','Dizzy VH':'Dizzy 4x12','Eng 120':'Dizzy 4x12','Eng Power':'Dizzy 4x12','Halen 51':'Dizzy 4x12','Calif DualV':'Dual 4x12','Calif DualM':'Dual 4x12','Flyman B1+':'BritGN 4x12','Bog XT V':'Bog 4x12','A BassVT':'Ampg 4x10','Voks Bass':'Voks 1x12',
+ 'Calif Star CL':'Double 2x12','Superb CL':'Viblux 1x12','Bog SV CL':'Bog 4x12','Doctor CL':'Voks 1x12','Brit 50':'BritGN 4x12','Supero 2 OD':'BritGN 4x12','Calif IIC+':'Dual 4x12','Superb OD':'Viblux 1x12','Doctor OD':'Voks 1x12','Flyman B1':'BritGN 4x12','Brit 900':'BritGN 4x12','Dizzy VH+':'Dizzy 4x12','Calif IV LD':'Dual 4x12','Bog XT M':'Bog 4x12','Tanger R100':'Dual 4x12','Calif Bass':'Bass 4x10'};
+
+function descOf(m){return (m.s?'['+m.s+'] ':'')+m.d+(m.u?' · parâmetros a confirmar no app':'')}
+function defParams(slot,model){
+  const m=DB[slot].models[model];const o={};
+  (m.p||[K('VOL')]).forEach(p=>{o[p.n]=p.t==='k'?(p.d??50):p.t==='sw'?false:p.t==='sel'?p.o[0]:p.d});
+  return o;
+}
+function mk(slot,model,on,params){model=ALIAS[model]||model;const d=defParams(slot,model);for(const k in (params||{}))if(k in d)d[k]=params[k];return {on:!!on,model,params:d}}
+function migrate(ch){for(const s of ORDER){const x=ch[s];const n=x&&(ALIAS[x.model]||x.model);ch[s]=x&&DB[s].models[n]?mk(s,n,x.on,x.params):mk(s,Object.keys(DB[s].models)[0],false)}return ch}
+function blank(){return {
+  NR:mk('NR','Gate',false),FX1:mk('FX1','COMP 1',false),FX2:mk('FX2','A-Chorus',false),
+  DRV:mk('DRV','Scream',false),AMP:mk('AMP','Dark Twin',true),CAB:mk('CAB','Double 2x12',true,{VOL:50}),
+  EQ:mk('EQ','GT EQ 1',false),DLY:mk('DLY','Pure',false),RVB:mk('RVB','Room',false)}}
+
+// ---------- Motor local (offline) ----------
+const PROFILES=[
+ {k:['metal','metallica','thrash','pantera','megadeth','slayer'],n:'THRASH',t:'Metal/thrash apertado: Tube Screamer como boost na frente de um Rectifier moderno, médios levemente cortados e gate firme.',
+  s:{NR:[1,'Gate',{THRE:55}],DRV:[1,'Scream',{Gain:5,Tone:60,VOL:80}],AMP:[1,'Calif DualM',{Gain:68,PRES:55,VOL:50,Bass:60,Middle:38,Treble:62}],CAB:[1,'Dual 4x12'],EQ:[1,'GT EQ 2',{'100Hz':45,'500Hz':45,'1kHz':50,'3kHz':55,'6kHz':45,VOL:50}],RVB:[1,'Room',{Mix:12,Decay:30}]}},
+ {k:['djent','moderno','modern metal','meshuggah','periphery','metalcore','high gain'],n:'DJENT',t:'High gain moderno: ENGL Powerball com boost, graves controlados e gate alto.',
+  s:{NR:[1,'Gate',{THRE:62}],DRV:[1,'Scream',{Gain:0,Tone:65,VOL:85}],AMP:[1,'Eng Power',{Gain:62,PRES:60,VOL:50,Bass:52,Middle:48,Treble:60}],CAB:[1,'Dizzy 4x12'],EQ:[1,'GT EQ 2',{'100Hz':40,'500Hz':48,'1kHz':52,'3kHz':56,'6kHz':44,VOL:50}],RVB:[1,'Room',{Mix:10,Decay:25}]}},
+ {k:['van halen','eddie','eruption','brown sound','5150'],n:'BROWN',t:'Brown sound: Marshall jumpeado quente com flanger e delay curto.',
+  s:{NR:[1,'Gate',{THRE:35}],FX2:[0,'Flanger',{Depth:55,Rate:25,'P.Delay':40,'F.Back':55}],AMP:[1,'Brit 50JP',{'Gain 1':75,'Gain 2':60,PRES:60,VOL:50,Bass:55,Middle:65,Treble:60}],CAB:[1,'BritGN 4x12'],DLY:[1,'Analog',{Mix:18,Time:30,'F.Back':20}],RVB:[1,'Plate 1',{Mix:20,Decay:40}]}},
+ {k:['gilmour','pink floyd','comfortably','floyd'],n:'GILMOUR',t:'Solo estilo Gilmour: fuzz suave com compressor, amp de pouco ganho, delay longo e reverb de salão.',
+  s:{FX1:[1,'COMP 1',{Sustain:45,VOL:55}],DRV:[1,'Grey Fuzz',{Fuzz:55,VOL:55}],AMP:[1,'Brit 45',{Gain:30,PRES:55,VOL:55,Bass:45,Middle:55,Treble:58}],CAB:[1,'BritGN 4x12'],DLY:[1,'Analog',{Mix:30,Time:65,'F.Back':35}],RVB:[1,'Hall',{Mix:28,Decay:60}]}},
+ {k:['hendrix','jimi','purple haze','voodoo child','fuzz face'],n:'HENDRIX',t:'Hendrix: Fuzz Face + Uni-Vibe num Marshall clássico.',
+  s:{FX1:[1,'Vibe',{Depth:55,Rate:40}],DRV:[1,'Red Fuzz',{Fuzz:70,VOL:55}],AMP:[1,'Brit 45',{Gain:55,PRES:60,VOL:55,Bass:50,Middle:60,Treble:60}],CAB:[1,'BritGN 4x12'],RVB:[1,'Spring',{Mix:18,Decay:35}]}},
+ {k:['srv','stevie ray','texas','pride and joy'],n:'TEXAS',t:'Texas blues: Tube Screamer com tone alto num Twin limpo e cheio.',
+  s:{DRV:[1,'Scream',{Gain:35,Tone:60,VOL:75}],AMP:[1,'Dark Twin',{Gain:45,VOL:55,Bass:55,Middle:55,Treble:60,Bright:true}],CAB:[1,'Double 2x12'],RVB:[1,'Spring',{Mix:25,Decay:40}]}},
+ {k:['slash','guns','sweet child','les paul'],n:'SLASH',t:'Slash: JCM800 saturado, médios na frente, delay discreto.',
+  s:{NR:[1,'Gate',{THRE:30}],AMP:[1,'Brit 800',{Gain:72,PRES:55,VOL:50,Bass:50,Middle:68,Treble:58}],CAB:[1,'BritGN 4x12'],DLY:[1,'Analog',{Mix:18,Time:45,'F.Back':25}],RVB:[1,'Plate 1',{Mix:18,Decay:40}]}},
+ {k:['john mayer','mayer','gravity','neo soul','neosoul'],n:'MAYER',t:'Mayer/neo-soul: limpo na beira do crunch, Tube Screamer leve e compressão.',
+  s:{FX1:[1,'COMP 2',{Sustain:40,Attack:55,VOL:55,Clipping:40}],DRV:[1,'Scream',{Gain:25,Tone:50,VOL:65}],AMP:[1,'Dark Twin',{Gain:45,VOL:55,Bass:50,Middle:55,Treble:58,Bright:false}],CAB:[1,'Double 2x12'],DLY:[1,'Warm',{Mix:15,Time:40,'F.Back':20}],RVB:[1,'Spring',{Mix:22,Decay:40}]}},
+ {k:['u2','the edge','edge','worship','gospel','louvor','ambient worship'],n:'WORSHIP',t:'Worship/Edge: AC30 Top Boost com delay ping-pong pontuado e plate grande.',
+  s:{FX1:[1,'COMP 1',{Sustain:35,VOL:55}],DRV:[1,'Butter OD',{Gain:35,VOL:60}],AMP:[1,'Voks 30TB',{Gain:40,Tone:55,VOL:55,Bass:50,Treble:60,Char:'Cool'}],CAB:[1,'Voks 1x12'],DLY:[1,'Ping Pong',{Mix:35,Time:48,'F.Back':40}],RVB:[1,'Plate 2',{Mix:35,Decay:65,Damp:40}]}},
+ {k:['grunge','nirvana','cobain','smells like','alice in chains','soundgarden'],n:'GRUNGE',t:'Grunge: RAT num Marshall, médios presentes, chorus opcional no limpo.',
+  s:{NR:[1,'Gate',{THRE:30}],FX2:[0,'A-Chorus',{Depth:50,Rate:35,Tone:50}],DRV:[1,'Dark Mouse',{Gain:65,Filter:45,VOL:60}],AMP:[1,'Brit 800',{Gain:40,PRES:55,VOL:50,Bass:55,Middle:60,Treble:55}],CAB:[1,'BritGN 4x12'],RVB:[1,'Room',{Mix:12,Decay:30}]}},
+ {k:['shoegaze','my bloody','wall of sound','parede'],n:'SHOEGAZE',t:'Shoegaze: fuzz + detune com reverb Dream enorme.',
+  s:{FX2:[1,'Detune',{Detune:14,'Dry/Wet':45}],DRV:[1,'Grey Fuzz',{Fuzz:75,VOL:50}],AMP:[1,'Voks 30TB',{Gain:45,Tone:50,VOL:50,Bass:55,Treble:50,Char:'Hot'}],CAB:[1,'Voks 1x12'],DLY:[1,'Tube',{Mix:30,Time:55,'F.Back':45}],RVB:[1,'Dream',{Mix:55,Decay:80,Damp:35}]}},
+ {k:['ambient','ambiente','pad','atmosfera','post rock','post-rock'],n:'AMBIENT',t:'Ambient: limpo comprimido, delay de fita e reverb oceânico.',
+  s:{FX1:[1,'COMP 1',{Sustain:45,VOL:55}],AMP:[1,'Dark Twin',{Gain:30,VOL:55,Bass:50,Middle:45,Treble:60,Bright:true}],CAB:[1,'Double 2x12'],DLY:[1,'Tube',{Mix:35,Time:60,'F.Back':50}],RVB:[1,'Ocean',{Mix:50,Decay:80}]}},
+ {k:['funk','nile','chic','groove','wah'],n:'FUNK',t:'Funk: compressor + touch wah num limpo brilhante.',
+  s:{NR:[1,'Gate',{THRE:20}],FX1:[1,'COMP 2',{Sustain:55,Attack:40,VOL:55,Clipping:40}],FX2:[1,'Touch Wah',{Sense:55,Range:55,Q:60,Mix:80,Mode:'Guitar'}],AMP:[1,'Jazz 120',{VOL:55,Bass:45,Middle:50,Treble:62,Bright:true}],CAB:[1,'Jazz 2x12'],RVB:[1,'Room',{Mix:12,Decay:25}]}},
+ {k:['jazz','bebop','wes','fusion limpo'],n:'JAZZ',t:'Jazz: Jazz Chorus escuro e quente, reverb de sala.',
+  s:{AMP:[1,'Jazz 120',{VOL:55,Bass:58,Middle:50,Treble:38,Bright:false}],CAB:[1,'Jazz 2x12'],RVB:[1,'Room',{Mix:18,Decay:35}]}},
+ {k:['country','chicken','telecaster','tele','sertanejo'],n:'COUNTRY',t:'Country: compressor, limpo brilhante e slapback.',
+  s:{FX1:[1,'COMP 2',{Sustain:50,Attack:60,VOL:55,Clipping:35}],AMP:[1,'Dark Twin',{Gain:35,VOL:55,Bass:45,Middle:50,Treble:65,Bright:true}],CAB:[1,'Double 2x12'],DLY:[1,'Slap',{Mix:25,Time:15,'F.Back':10}],RVB:[1,'Spring',{Mix:20,Decay:35}]}},
+ {k:['reggae','ska'],n:'REGGAE',t:'Reggae: limpo seco, pouco grave, delay curto.',
+  s:{AMP:[1,'Jazz 120',{VOL:55,Bass:35,Middle:55,Treble:60,Bright:true}],CAB:[1,'Jazz 2x12'],DLY:[1,'Pure',{Mix:15,Time:35,'F.Back':25}],RVB:[1,'Spring',{Mix:15,Decay:30}]}},
+ {k:['baixo','bass','contrabaixo','slap bass'],n:'BASS',t:'Baixo: SVT com compressor e EQ de baixo; Bass Drive opcional.',
+  s:{NR:[1,'Gate',{THRE:20}],FX1:[1,'COMP 1',{Sustain:45,VOL:55}],DRV:[0,'Bass Drive',{Gain:35,Blend:45,VOL:55,Bass:55,Treble:50}],AMP:[1,'A BassVT',{Gain:40,VOL:55,MidFreq:45,Bass:60,Middle:50,Treble:50}],CAB:[1,'Ampg 4x10'],EQ:[1,'Bass EQ',{'50Hz':55,'120Hz':55,'400Hz':45,'800Hz':52,'4.5kHz':50,VOL:50}]}},
+ {k:['blues','bb king','clapton','bluesy'],n:'BLUES',t:'Blues: Bassman empurrado por Tube Screamer leve.',
+  s:{DRV:[1,'Scream',{Gain:30,Tone:55,VOL:65}],AMP:[1,'B-Man N',{Gain:50,PRES:55,VOL:55,Bass:50,Middle:60,Treble:55}],CAB:[1,'TWD 2x12'],DLY:[1,'Warm',{Mix:15,Time:40,'F.Back':20}],RVB:[1,'Spring',{Mix:22,Decay:40}]}},
+ {k:['solo','lead','fluido','cantado'],n:'LEAD',t:'Lead genérico: Soldano com boost, delay e reverb para sustentar.',
+  s:{NR:[1,'Gate',{THRE:35}],DRV:[1,'Scream',{Gain:10,Tone:55,VOL:75}],AMP:[1,'Sol 100 LD',{Gain:62,PRES:55,VOL:50,Bass:50,Middle:62,Treble:55}],CAB:[1,'Sol 4x12'],DLY:[1,'Analog',{Mix:25,Time:50,'F.Back':30}],RVB:[1,'Hall',{Mix:22,Decay:50}]}},
+ {k:['hard rock','ac/dc','acdc','rock pesado'],n:'HARDROCK',t:'Hard rock: JCM800 com ganho médio e pouco efeito.',
+  s:{NR:[1,'Gate',{THRE:25}],AMP:[1,'Brit 800',{Gain:60,PRES:55,VOL:50,Bass:52,Middle:62,Treble:60}],CAB:[1,'BritGN 4x12'],RVB:[1,'Room',{Mix:14,Decay:30}]}},
+ {k:['crunch','rock','classic rock','indie','britpop'],n:'CRUNCH',t:'Crunch/classic rock: Marshall de ganho moderado com boost.',
+  s:{DRV:[1,'Scream',{Gain:20,Tone:55,VOL:70}],AMP:[1,'Brit 45',{Gain:55,PRES:55,VOL:55,Bass:50,Middle:58,Treble:58}],CAB:[1,'BritGN 4x12'],RVB:[1,'Room',{Mix:15,Decay:35}]}},
+ {k:['limpo','clean','cristalino','dedilhado','arpejo'],n:'CLEAN',t:'Limpo cristalino: Twin com compressor, chorus opcional e reverb de mola.',
+  s:{FX1:[1,'COMP 1',{Sustain:40,VOL:55}],FX2:[0,'A-Chorus',{Depth:40,Rate:35,Tone:55}],AMP:[1,'Dark Twin',{Gain:30,VOL:55,Bass:50,Middle:45,Treble:60,Bright:true}],CAB:[1,'Double 2x12'],DLY:[1,'Pure',{Mix:15,Time:40,'F.Back':20}],RVB:[1,'Spring',{Mix:28,Decay:45}]}}
+];
+const CHIPS=['Limpo','Blues','Crunch','Hard rock','Metal','Djent','Solo','Funk','Jazz','Country','Worship','Ambient','Shoegaze','Grunge','Baixo','Gilmour','Hendrix','SRV','Slash','Van Halen','John Mayer'];
+
+function clamp(v,a,b){v=Number(v);if(isNaN(v))return null;return Math.max(a,Math.min(b,Math.round(v)))}
+function localEngine(text){
+  const t=text.toLowerCase();
+  let best=null,score=0;
+  for(const p of PROFILES){let s=0;for(const k of p.k){if(t.includes(k))s+=k.length}if(s>score){score=s;best=p}}
+  if(!best)best=PROFILES.find(p=>p.n==='CRUNCH');
+  const c=blank();
+  for(const slot in best.s){const [on,model,params]=best.s[slot];c[slot]=mk(slot,model,on,params)}
+  if(!best.s.CAB)c.CAB=mk('CAB',CAB_FOR[c.AMP.model]||'BritGN 4x12',true);
+  const bump=(slot,keys,d)=>{if(!c[slot].on)return;keys.forEach(k=>{if(k in c[slot].params&&typeof c[slot].params[k]==='number')c[slot].params[k]=clamp(c[slot].params[k]+d,0,100)})};
+  if(/mais ganho|saturad|pesad|gain alto/.test(t))bump('AMP',['Gain','Gain 1'],12);
+  if(/menos ganho|leve|suave/.test(t))bump('AMP',['Gain','Gain 1'],-12);
+  if(/brilhante|agudo|bright/.test(t))bump('AMP',['Treble'],10);
+  if(/escuro|quente|warm|grave/.test(t))bump('AMP',['Treble'],-10);
+  if(/delay longo|muito delay/.test(t)){c.DLY=mk('DLY',c.DLY.on?c.DLY.model:'Analog',true,{Mix:32,Time:70,'F.Back':40})}
+  if(/sem delay/.test(t))c.DLY.on=false;
+  if(/muito reverb|reverb grande|espacial/.test(t)){c.RVB=mk('RVB','Hall',true,{Mix:40,Decay:70})}
+  if(/sem reverb|seco/.test(t))c.RVB.on=false;
+  if(/shimmer/.test(t))c.DLY=mk('DLY','Shimmer Delay',true,{Mix:30,Time:60,'F.Back':45});
+  if(/freeze|congelar/.test(t))c.RVB=mk('RVB','Freeze',true,{Mix:45,Decay:80});
+  if(/chorus/.test(t))c.FX2=mk('FX2','A-Chorus',true,{Depth:50,Rate:35,Tone:50});
+  if(/phaser|phase 90/.test(t))c.FX2=mk('FX2','Phaser',true,{Rate:35});
+  if(/tremolo/.test(t))c.FX2=mk('FX2','Tremolo',true,{Depth:55,Rate:45});
+  if(/oitava|octave/.test(t))c.FX2=mk('FX2','Octave',true,{Low:50,High:0,Dry:60});
+  return {name:best.n,notes:best.t,chain:c};
+}
+function cleanName(n){return String(n).normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9 \-_]/g,'').toUpperCase().slice(0,10).trim()||'MY TONE'}
+
+// ---------- Estado e UI ----------
+let cur={name:'',notes:'',chain:blank()};
+const $=id=>document.getElementById(id);
+function render(){
+  $('pname').value=cur.name;
+  $('notes').textContent=cur.notes;
+  const n=ORDER.filter(s=>cur.chain[s].on).length;
+  $('active').textContent=`${n} de 9 módulos ligados`;
+  const box=$('chain');box.innerHTML='';
+  for(const s of ORDER){
+    const mod=cur.chain[s],info=DB[s];
+    const el=document.createElement('div');el.className='card mod'+(mod.on?' active':'');
+    const opts=Object.keys(info.models).map(k=>`<option value="${k}" ${k===mod.model?'selected':''}>${k}${info.models[k].s?' · '+info.models[k].s:''}</option>`).join('');
+    el.innerHTML=`<div class="modhead"><span class="tag">${info.label}</span><select aria-label="${info.full}">${opts}</select><label class="sw"><input type="checkbox" ${mod.on?'checked':''} aria-label="ligar ${info.label}"><span></span></label></div><div class="desc">${descOf(info.models[mod.model])}</div><div class="params"></div>`;
+    el.querySelector('select').onchange=e=>{const keepOn=mod.on;cur.chain[s]=mk(s,e.target.value,keepOn);if(s==='AMP'&&CAB_FOR[e.target.value]&&!cur.chain.CAB.model.startsWith('User'))cur.chain.CAB=mk('CAB',CAB_FOR[e.target.value],cur.chain.CAB.on,{VOL:cur.chain.CAB.params.VOL});render()};
+    el.querySelector('input[type=checkbox]').onchange=e=>{mod.on=e.target.checked;render()};
+    const pbox=el.querySelector('.params');
+    for(const p of (info.models[mod.model].p||[K('VOL')])){
+      const row=document.createElement('div');row.className='p';
+      const v=mod.params[p.n];
+      if(p.t==='k'||p.t==='st'){
+        const min=p.t==='k'?0:p.min,max=p.t==='k'?100:p.max;
+        row.innerHTML=`<span>${p.n}</span><input type="range" min="${min}" max="${max}" value="${v}"><b>${v}</b>`;
+        const r=row.querySelector('input'),b=row.querySelector('b');
+        r.oninput=()=>{mod.params[p.n]=+r.value;b.textContent=r.value;updOut()};
+      }else if(p.t==='sw'){
+        row.innerHTML=`<span>${p.n}</span><label class="sw"><input type="checkbox" ${v?'checked':''}><span></span></label><b>${v?'ON':'OFF'}</b>`;
+        const c=row.querySelector('input'),b=row.querySelector('b');
+        c.onchange=()=>{mod.params[p.n]=c.checked;b.textContent=c.checked?'ON':'OFF';updOut()};
+      }else{
+        row.innerHTML=`<span>${p.n}</span><select>${p.o.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('')}</select><b></b>`;
+        row.querySelector('select').onchange=e=>{mod.params[p.n]=e.target.value;updOut()};
+      }
+      pbox.appendChild(row);
+    }
+    box.appendChild(el);
+  }
+  updOut();
+}
+function fmt(v){return v===true?'ON':v===false?'OFF':v}
+function recipe(p){
+  let s=`PRESET: ${p.name||'MY TONE'}\n`;
+  for(const k of ORDER){const m=p.chain[k];
+    const mi=DB[k].models[m.model];s+=`\n[${DB[k].label}] ${m.on?'ON ':'OFF'}  ${m.model}${mi&&mi.s?' ('+mi.s+')':''}`;
+    if(m.on)s+='\n   '+Object.entries(m.params).map(([a,b])=>`${a} ${fmt(b)}`).join(' · ');
+  }
+  if(p.notes)s+=`\n\nNotas: ${p.notes}`;
+  return s;
+}
+function updOut(){cur.name=cleanName($('pname').value||cur.name||'MY TONE');$('out').textContent=recipe(cur)}
+$('pname').oninput=()=>{updOut()};
+$('pname').onchange=()=>{$('pname').value=cleanName($('pname').value);updOut()};
+
+function setMsg(t,cls,id='msg'){const m=$(id);m.textContent=t;m.className='msg '+(cls||'')}
+$('btnLocal').onclick=()=>{const d=$('desc').value.trim();if(!d){setMsg('Escreva uma descrição ou toque num estilo.','err');return}cur=localEngine(d);render();setMsg('Preset gerado. Ajuste à vontade.','ok')};
+const chipBox=$('chips');
+CHIPS.forEach(c=>{const b=document.createElement('button');b.className='chip';b.textContent=c;b.onclick=()=>{$('desc').value=c;cur=localEngine(c);render();setMsg('Base carregada — descreva mais detalhes e gere de novo.','ok')};chipBox.appendChild(b)});
+
+function copyText(t){
+  if(window.Android&&Android.copy){Android.copy(t);return Promise.resolve()}
+  return navigator.clipboard.writeText(t);
+}
+async function copyOut(){try{await copyText(recipe(cur));setMsg('Copiado!','ok','msg2')}catch(e){
+  const r=document.createRange();r.selectNodeContents($('out'));const s=getSelection();s.removeAllRanges();s.addRange(r);setMsg('Texto selecionado — copie manualmente.','err','msg2')}}
+
+// ---------- Biblioteca ----------
+const LK='amphonix2_lib_v1';
+function getLib(){try{return JSON.parse(localStorage.getItem(LK)||'[]')}catch(e){return []}}
+function setLib(l){try{localStorage.setItem(LK,JSON.stringify(l));return true}catch(e){return false}}
+function saveLib(){const l=getLib();l.unshift({...JSON.parse(JSON.stringify(cur)),desc:$('desc').value,ts:Date.now()});
+  setMsg(setLib(l.slice(0,200))?`"${cur.name}" salvo na biblioteca.`:'Não foi possível salvar.',null,'msg2')}
+function renderLib(){
+  const l=getLib(),box=$('libList');
+  if(!l.length){box.innerHTML='<div class="card" style="color:var(--mut)">Nenhum preset salvo ainda.</div>';return}
+  box.innerHTML='';
+  l.forEach((p,i)=>{const el=document.createElement('div');el.className='card';
+    el.innerHTML=`<div class="lib"><div><b>${p.name}</b><br><small>${p.chain.AMP.model} · ${p.chain.CAB.model}${p.desc?' — '+p.desc.slice(0,60).replace(/</g,'&lt;'):''}</small></div><div class="row"><button>Abrir</button><button>✕</button></div></div>`;
+    const [o,x]=el.querySelectorAll('button');
+    o.onclick=()=>{cur={name:p.name,notes:p.notes,chain:migrate(p.chain)};$('desc').value=p.desc||'';tab('create');render()};
+    x.onclick=()=>{const l2=getLib();l2.splice(i,1);setLib(l2);renderLib()};
+    box.appendChild(el)});
+}
+// ---------- Lista de efeitos ----------
+function renderFx(){
+  let h='';
+  for(const s of ORDER){const fx2=s==='FX2';const name=fx2?'FX2 (lista do FX1 +)':DB[s].label;
+    h+=`<h3>${name} — ${DB[s].full}</h3><table>`;
+    for(const [k,v] of Object.entries(DB[s].models)){if(fx2&&DB.FX1.models[k])continue;h+=`<tr><td>${k}</td><td>${descOf(v)}<br><span style="color:var(--mut)">${(v.p||[K('VOL')]).map(p=>p.n).join(', ')}</span></td></tr>`}
+    h+='</table>'}
+  h+=`<h3>Limites do aparelho</h3><table><tr><td>Efeitos</td><td>até 9 simultâneos</td></tr><tr><td>IR</td><td>WAV 44,1 kHz / 24-bit / 512 pontos, slots User IR</td></tr><tr><td>Nome</td><td>inglês, até 10 caracteres</td></tr></table>`;
+  $('fxList').innerHTML=h;
+}
+function tab(t){
+  ['create','lib','fx'].forEach(x=>{$('v'+x[0].toUpperCase()+x.slice(1)).classList.toggle('hidden',x!==t)});
+  $('tCreate').classList.toggle('on',t==='create');$('tLib').classList.toggle('on',t==='lib');$('tFx').classList.toggle('on',t==='fx');
+  if(t==='lib')renderLib();if(t==='fx')renderFx();window.scrollTo(0,0);
+}
+render();
+</script>
+</body>
+</html>
